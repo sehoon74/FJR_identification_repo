@@ -222,6 +222,8 @@ The correct candidate is selected as:
 
 \subsection{Algorithm Summary}
 
+Algorithm~\ref{alg:main} consolidates Steps~5 and 6 into a single procedure. Step~5 reduces $2^{\binom{n}{2}}$ sign combinations to $2^{n-1}$ candidates via eigenvalue consistency (\S\ref{sec:sign_ambiguity}). Step~6 reconstructs, for each survivor, the full mass matrix $\bm{M}_{l,\bm{\sigma}}$, computes the model FRF via the $2n \times 2n$ impedance inversion, and selects the candidate with minimum off-diagonal NRMSE.
+
 \begin{algorithm}[t]
 \caption{Signed Inertia Matrix via Off-Diagonal FRF Fitting}
 \label{alg:main}
