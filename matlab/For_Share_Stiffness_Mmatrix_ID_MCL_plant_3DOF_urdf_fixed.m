@@ -752,6 +752,279 @@ for r = 1:3
         ii, jj, off_mp{r,3}, Minv_iter_fin(ii,jj), M_inv_gt(ii,jj));
 end
 
+%% -----------------------------------------------------------------------
+%  [방법 5] Off-Diagonal FRF Fitting
+%  
+%  기존 방법 2의 Vieta 결과 (W_i, |Γ_ij|, K_est)를 사용하되,
+%  부호를 비대각 FRF 전체 피팅으로 결정.
+%
+%  알고리즘:
+%    Step 5: 고유값 제약 → 8개 중 4개 후보 필터링
+%    Step 6: 4개 후보 각각의 모델 FRF를 계산, 비대각 NRMSE 비교
+% -----------------------------------------------------------------------
+fprintf('\n===== [방법 5] Off-Diagonal FRF Fitting =====\n');
+
+% --- Step 4 결과 재사용: W_est, |Γ_ij| from 방법 2 ---
+% recoverMinv에서 W_est를 내부에서 계산했으므로 재계산
+W_est_m5 = zeros(1, DOF);
+W_est_m5(1) = (A_cmif(2) + A_cmif(3) - A_cmif(1)) / 2;
+W_est_m5(2) = (A_cmif(1) + A_cmif(3) - A_cmif(2)) / 2;
+W_est_m5(3) = (A_cmif(1) + A_cmif(2) - A_cmif(3)) / 2;
+
+Gamma_abs_12 = sqrt(max(0, (W_est_m5(1)*W_est_m5(2) - B_cmif(3))));
+Gamma_abs_13 = sqrt(max(0, (W_est_m5(1)*W_est_m5(3) - B_cmif(2))));
+Gamma_abs_23 = sqrt(max(0, (W_est_m5(2)*W_est_m5(3) - B_cmif(1))));
+Gamma_abs = [Gamma_abs_12, Gamma_abs_13, Gamma_abs_23];
+
+fprintf('  W   = [%.2f, %.2f, %.2f]\n', W_est_m5);
+fprintf('  |Γ| = [%.2f, %.2f, %.2f]\n', Gamma_abs);
+
+% --- Step 5: 고유값 제약 → 4 후보 ---
+target_eig = sort(omega_R_cmif.^2);
+sign_combos = [ +1,+1,+1; +1,-1,-1; -1,+1,-1; -1,-1,+1;
+                +1,+1,-1; +1,-1,+1; -1,+1,+1; -1,-1,-1 ];
+            
+n_cand = 0;
+cand_signs = [];
+cand_Dprime = {};
+for c = 1:size(sign_combos, 1)
+    s12 = sign_combos(c,1); s13 = sign_combos(c,2); s23 = sign_combos(c,3);
+    D_test = diag(W_est_m5);
+    D_test(1,2) = s12*Gamma_abs(1); D_test(2,1) = D_test(1,2);
+    D_test(1,3) = s13*Gamma_abs(2); D_test(3,1) = D_test(1,3);
+    D_test(2,3) = s23*Gamma_abs(3); D_test(3,2) = D_test(2,3);
+    
+    test_eig = sort(real(eig(D_test)));
+    eig_err = norm(test_eig - target_eig) / norm(target_eig);
+    
+    if eig_err < 1e-3
+        n_cand = n_cand + 1;
+        cand_signs(n_cand, :) = [s12, s13, s23];
+        cand_Dprime{n_cand} = D_test;
+    end
+end
+fprintf('  고유값 제약 통과: %d개 후보\n', n_cand);
+
+% --- Step 6: 비대각 FRF 피팅 ---
+fprintf('\n--- Off-Diagonal FRF Fitting ---\n');
+
+% 피팅용 주파수 격자 (coarse, 실용적)
+df_fit   = 0.5;   % Hz
+f_fit    = 2.0 : df_fit : 45.0;
+w_fit    = 2*pi*f_fit;
+N_fit    = length(f_fit);
+
+% "측정" 비대각 FRF (고해상도 데이터에서 해당 주파수 추출)
+G_meas_fit = zeros(DOF, DOF, N_fit);
+for kk = 1:N_fit
+    [~, idx_closest] = min(abs(omega_vec - w_fit(kk)));
+    for io = 1:DOF
+        for ii = 1:DOF
+            G_meas_fit(io, ii, kk) = FRF_p{io, ii}(idx_closest);
+        end
+    end
+end
+
+% 각 후보에 대해 모델 FRF 계산 & NRMSE
+nrmse_m5 = zeros(n_cand, 1);
+Minv_cand = cell(n_cand, 1);
+
+for c = 1:n_cand
+    D_c = cand_Dprime{c};
+    
+    % D' → M^{-1}
+    Mc = diag((W_est_m5 - omega_m_sq) ./ K_est_cmif);
+    for i = 1:DOF
+        for j = i+1:DOF
+            Mc(i,j) = D_c(i,j) / sqrt(K_est_cmif(i) * K_est_cmif(j));
+            Mc(j,i) = Mc(i,j);
+        end
+    end
+    Minv_cand{c} = Mc;
+    Ml_c = inv(Mc);
+    
+    % 모델 FRF 계산
+    err_num = 0;
+    err_den = 0;
+    for kk = 1:N_fit
+        G_model = computeModelFRF(Ml_c, Jm_local, K_est_cmif, Nm_local, w_fit(kk));
+        for io = 1:DOF
+            for ii = 1:DOF
+                if io ~= ii
+                    d = G_model(io,ii) - G_meas_fit(io,ii,kk);
+                    err_num = err_num + real(d * conj(d));
+                    err_den = err_den + real(G_meas_fit(io,ii,kk) * conj(G_meas_fit(io,ii,kk)));
+                end
+            end
+        end
+    end
+    nrmse_m5(c) = sqrt(err_num / err_den) * 100;
+    
+    s = cand_signs(c,:);
+    fprintf('  (%+d,%+d,%+d): NRMSE = %.4f%%\n', s(1), s(2), s(3), nrmse_m5(c));
+end
+
+% 최적 후보 선택
+[best_nrmse, best_idx] = min(nrmse_m5);
+best_signs_m5 = cand_signs(best_idx, :);
+Minv_m5 = Minv_cand{best_idx};
+
+gt_signs = [sign(M_inv_gt(1,2)), sign(M_inv_gt(1,3)), sign(M_inv_gt(2,3))];
+sign_match = all(best_signs_m5 == gt_signs);
+
+fprintf('\n  ✓ 최적: (%+d,%+d,%+d), NRMSE = %.4f%%\n', ...
+    best_signs_m5(1), best_signs_m5(2), best_signs_m5(3), best_nrmse);
+fprintf('  GT:     (%+d,%+d,%+d)\n', gt_signs(1), gt_signs(2), gt_signs(3));
+if sign_match
+    fprintf('  부호 일치: YES ✓\n');
+else
+    fprintf('  부호 일치: NO ✗\n');
+end
+
+% --- 결과 출력 ---
+fprintf('\n[M^{-1} (방법 5, 부호 완전 결정)]\n');
+disp(Minv_m5);
+fprintf('[Ground Truth M^{-1}]\n');
+disp(M_inv_gt);
+
+fprintf('[오차]\n');
+for i = 1:DOF
+    for j = i:DOF
+        err = abs(Minv_m5(i,j) - M_inv_gt(i,j)) / abs(M_inv_gt(i,j)) * 100;
+        fprintf('  (%d,%d): Est=%+.6f  True=%+.6f  Err=%.4f%%\n', ...
+            i, j, Minv_m5(i,j), M_inv_gt(i,j), err);
+    end
+end
+
+% --- 5가지 방법 최종 비교 ---
+fprintf('\n===== 방법 1-5 최종 비교 =====\n');
+fprintf('%-12s %10s %10s %10s %10s %10s %10s\n', ...
+    '', 'roots', 'CMIF', 'MP', 'Iter', 'M5(FRF)', 'True');
+for i = 1:DOF
+    fprintf('K_%d        %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f\n', ...
+        selected_joints(i), K_est_roots(i), K_est_cmif(i), ...
+        K_est_mp(i), K_est_iter(i), K_est_cmif(i), K_true(i));
+end
+fprintf('\n(M^{-1})_{ij} — 부호 포함 비교 (MP, Iter, M5):\n');
+off_pairs_m5 = [1,2; 1,3; 2,3];
+for r = 1:3
+    ii = off_pairs_m5(r,1); jj = off_pairs_m5(r,2);
+    fprintf('  (%d,%d)  MP=%+.6f  Iter=%+.6f  M5=%+.6f  True=%+.6f\n', ...
+        ii, jj, Minv_mp(ii,jj), Minv_iter_fin(ii,jj), ...
+        Minv_m5(ii,jj), M_inv_gt(ii,jj));
+end
+
+%% -----------------------------------------------------------------------
+%  [다중 포즈 검증] — 모든 포즈에서 방법 5 실행
+% -----------------------------------------------------------------------
+fprintf('\n\n===== 다중 포즈 검증 (방법 5) =====\n');
+fprintf('%-6s %12s %6s %10s %10s %8s\n', ...
+    'Pose', 'Signs', 'OK?', 'Best%', '2nd%', 'Ratio');
+
+for p = 1:N_poses
+    M_l_p   = M_log{p};
+    M_inv_p = inv(M_l_p);
+    FRF_pp  = FRF_log{p};
+    omega_R_p = omega_R_log{p};
+    omega_AR_p = omega_AR_log{p};
+    
+    % Vieta (방법 2 재수행)
+    P_W_p = sym2poly(expand(prod(lambda - omega_R_p.^2)));
+    A_p = zeros(1,DOF); B_p = zeros(1,DOF);
+    for i = 1:DOF
+        P_Ni_p = sym2poly(expand(prod(lambda - omega_AR_p(i,:).^2)));
+        dc_p = P_Ni_p - P_W_p;
+        A_p(i) = -dc_p(3)/dc_p(2);
+        B_p(i) = dc_p(4)/dc_p(2);
+    end
+    W_p = zeros(1,3);
+    W_p(1) = (A_p(2)+A_p(3)-A_p(1))/2;
+    W_p(2) = (A_p(1)+A_p(3)-A_p(2))/2;
+    W_p(3) = (A_p(1)+A_p(2)-A_p(3))/2;
+    
+    K_p = zeros(1,DOF);
+    for i = 1:DOF
+        K_p(i) = Jr_local(i)*(sum(omega_R_p.^2)-sum(omega_AR_p(i,:).^2));
+    end
+    
+    Gabs_p = [sqrt(max(0, W_p(1)*W_p(2)-B_p(3))), ...
+              sqrt(max(0, W_p(1)*W_p(3)-B_p(2))), ...
+              sqrt(max(0, W_p(2)*W_p(3)-B_p(1)))];
+    
+    omega_m_sq_p = k_loc ./ Jr_local;
+    target_eig_p = sort(omega_R_p.^2);
+    
+    % 고유값 제약 필터
+    cand_p = []; Dp_cell = {};
+    for c = 1:8
+        s12=sign_combos(c,1); s13=sign_combos(c,2); s23=sign_combos(c,3);
+        Dt = diag(W_p);
+        Dt(1,2)=s12*Gabs_p(1); Dt(2,1)=Dt(1,2);
+        Dt(1,3)=s13*Gabs_p(2); Dt(3,1)=Dt(1,3);
+        Dt(2,3)=s23*Gabs_p(3); Dt(3,2)=Dt(2,3);
+        te = sort(real(eig(Dt)));
+        if norm(te-target_eig_p)/norm(target_eig_p) < 1e-3
+            cand_p = [cand_p; s12, s13, s23];
+            Dp_cell{end+1} = Dt;
+        end
+    end
+    
+    % 측정 비대각 FRF
+    G_meas_p = zeros(DOF,DOF,N_fit);
+    for kk = 1:N_fit
+        [~, idx_c] = min(abs(omega_vec - w_fit(kk)));
+        for io = 1:DOF
+            for ii = 1:DOF
+                G_meas_p(io,ii,kk) = FRF_pp{io,ii}(idx_c);
+            end
+        end
+    end
+    
+    % 각 후보 FRF 피팅
+    nrmse_p = zeros(size(cand_p,1),1);
+    Minv_p_cell = cell(size(cand_p,1),1);
+    for c = 1:size(cand_p,1)
+        Dc = Dp_cell{c};
+        Mc_p = diag((W_p - omega_m_sq_p) ./ K_p);
+        for i = 1:DOF
+            for j = i+1:DOF
+                Mc_p(i,j) = Dc(i,j)/sqrt(K_p(i)*K_p(j));
+                Mc_p(j,i) = Mc_p(i,j);
+            end
+        end
+        Minv_p_cell{c} = Mc_p;
+        Ml_c_p = inv(Mc_p);
+        
+        en = 0; ed = 0;
+        for kk = 1:N_fit
+            Gm = computeModelFRF(Ml_c_p, Jm_local, K_p, Nm_local, w_fit(kk));
+            for io = 1:DOF
+                for ii = 1:DOF
+                    if io ~= ii
+                        d = Gm(io,ii) - G_meas_p(io,ii,kk);
+                        en = en + real(d*conj(d));
+                        ed = ed + real(G_meas_p(io,ii,kk)*conj(G_meas_p(io,ii,kk)));
+                    end
+                end
+            end
+        end
+        nrmse_p(c) = sqrt(en/ed)*100;
+    end
+    
+    [best_n, bi] = min(nrmse_p);
+    best_s = cand_p(bi,:);
+    sorted_n = sort(nrmse_p);
+    ratio_p = sorted_n(2)/sorted_n(1);
+    
+    gt_s = [sign(M_inv_p(1,2)), sign(M_inv_p(1,3)), sign(M_inv_p(2,3))];
+    ok = all(best_s == gt_s);
+    ok_str = '✓'; if ~ok; ok_str = '✗'; end
+    
+    fprintf('  %3d  (%+d,%+d,%+d)  %4s  %9.3f%% %9.1f%% %7.0fx\n', ...
+        p, best_s(1), best_s(2), best_s(3), ok_str, ...
+        sorted_n(1), sorted_n(2), ratio_p);
+end
+
 fig_robot.HandleVisibility = 'off'; 
 setFigurePositions(4,500,500)
 %% =======================================================================
@@ -811,42 +1084,50 @@ end
 
 function setFigurePositions(cols, width, height)
     % Set Positions for All Figures
-    % cols : 숫자, 열의 수 / width : 너비 / height : 높이
-    
-    % Get all figure handles
     fig_handles = findall(groot, 'Type', 'figure', 'HandleVisibility', 'on');
-
-    % Retrieve the figure numbers (internal identifiers)
     fig_numbers = arrayfun(@(h) h.Number, fig_handles);
-    
-    % Sort the handles by their figure numbers
-    [~, idx] = sort(fig_numbers);  % Sort by Figure number
+    [~, idx] = sort(fig_numbers);
     fig_handles = fig_handles(idx);
-    
-    % Number of figures
     num_figures = length(fig_handles);
-    
-    % Positioning parameters
-%     width = 1000;
-%     height = 500;
-    h_margin = 10;  % Increased horizontal margin
-    v_margin = 100;   % Vertical margin remains the same
-
-    % Compute the number of rows based on the number of figures and columns
+    h_margin = 10;  v_margin = 100;
     rows = ceil(num_figures / cols);
-
-    % Compute positions for figures
     positions = zeros(num_figures, 4);
-
     for i = 1:num_figures
         row = floor((i-1) / cols);
         col = mod(i-1, cols);
         positions(i, :) = [col*(width + h_margin), (rows-row-1)*(height + v_margin) + 50, width, height];
     end
-
-    % Apply positions to figures
     for i = 1:num_figures
         set(fig_handles(i), 'Position', positions(i, :));
+    end
+end
+
+function G = computeModelFRF(M_l, Jm_vec, K_vec, Nm_vec, omega)
+% 모델 FRF 계산: M_l, Jm, K, Nm → 3x3 G(jω)
+    n = length(Jm_vec);
+    s = 1j * omega;
+    
+    M_total = [M_l,             zeros(n);
+               zeros(n),        diag(Jm_vec)];
+    Ninv = diag(1 ./ Nm_vec);
+    Kd   = diag(K_vec);
+    K_total = [ Kd,          -Kd*Ninv;
+               -Ninv*Kd,      Ninv^2*Kd];
+    
+    Z = M_total * s^2 + K_total;
+    det_Z = det(Z);
+    
+    G = zeros(n, n);
+    for io = 1:n
+        for ii = 1:n
+            row_idx = n + io;
+            col_idx = n + ii;
+            M_minor = Z;
+            M_minor(row_idx,:) = [];
+            M_minor(:,col_idx) = [];
+            sign_ij = (-1)^(row_idx + col_idx);
+            G(io,ii) = s * sign_ij * det(M_minor) / det_Z;
+        end
     end
 end
 
