@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="0.SEA arm">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.106259 -0.001482 3.7E-05"
+        rpy="0 0 0" />
+      <mass
+        value="2.643382" />
+      <inertia
+        ixx="0.005808"
+        ixy="0.000138"
+        ixz="-2.2E-05"
+        iyy="0.007336"
+        iyz="-3E-06"
+        izz="0.007381" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Link1_SEA">
+    <inertial>
+      <origin
+        xyz="0.109521 -0.00236 -0.00016"
+        rpy="0 0 0" />
+      <mass
+        value="2.761045" />
+      <inertia
+        ixx="0.00539"
+        ixy="-0.000453"
+        ixz="1.9E-05"
+        iyy="0.007754"
+        iyz="-1.3E-05"
+        izz="0.008718" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link1_SEA.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link1_SEA.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Joint1_SEA"
+    type="revolute">
+    <origin
+      xyz="0.165 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Link1_SEA" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Link2_SEA">
+    <inertial>
+      <origin
+        xyz="-0.001327 -0.00164 -0.149254"
+        rpy="0 0 0" />
+      <mass
+        value="2.54456" />
+      <inertia
+        ixx="0.008903"
+        ixy="-7E-06"
+        ixz="-0.000115"
+        iyy="0.008257"
+        iyz="2.4E-05"
+        izz="0.004897" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link2_SEA.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link2_SEA.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Joint2_SEA"
+    type="revolute">
+    <origin
+      xyz="0.125 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="Link1_SEA" />
+    <child
+      link="Link2_SEA" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Link3_SEA">
+    <inertial>
+      <origin
+        xyz="-0.000317 -0.0037 -0.10809"
+        rpy="0 0 0" />
+      <mass
+        value="1.766912" />
+      <inertia
+        ixx="0.004854"
+        ixy="-1.4E-05"
+        ixz="-1.3E-05"
+        iyy="0.004162"
+        iyz="0.000388"
+        izz="0.002629" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link3_SEA.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link3_SEA.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Joint3_SEA"
+    type="revolute">
+    <origin
+      xyz="0 -0.002 -0.2093"
+      rpy="0 0 0" />
+    <parent
+      link="Link2_SEA" />
+    <child
+      link="Link3_SEA" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Link4_SEA">
+    <inertial>
+      <origin
+        xyz="-0.001244 0.00072 -0.143635"
+        rpy="0 0 0" />
+      <mass
+        value="1.70789" />
+      <inertia
+        ixx="0.005434"
+        ixy="-1.2E-05"
+        ixz="-6.4E-05"
+        iyy="0.005054"
+        iyz="0.000101"
+        izz="0.002372" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link4_SEA.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link4_SEA.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Joint4_SEA"
+    type="revolute">
+    <origin
+      xyz="0 0 -0.125"
+      rpy="0 0 0" />
+    <parent
+      link="Link3_SEA" />
+    <child
+      link="Link4_SEA" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Link5_SEA">
+    <inertial>
+      <origin
+        xyz="-0.000229 -0.00269 -0.10799"
+        rpy="0 0 0" />
+      <mass
+        value="1.7706" />
+      <inertia
+        ixx="0.004883"
+        ixy="-1.4E-05"
+        ixz="-1.8E-05"
+        iyy="0.004195"
+        iyz="0.000387"
+        izz="0.002629" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link5_SEA.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link5_SEA.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Joint5_SEA"
+    type="revolute">
+    <origin
+      xyz="0 -0.0010003 -0.2"
+      rpy="0 0 0" />
+    <parent
+      link="Link4_SEA" />
+    <child
+      link="Link5_SEA" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Link6_SEA">
+    <inertial>
+      <origin
+        xyz="-0.000286 -0.001972 -0.143635"
+        rpy="0 0 0" />
+      <mass
+        value="1.70789" />
+      <inertia
+        ixx="0.005435"
+        ixy="1.2E-05"
+        ixz="-1.2E-05"
+        iyy="0.005054"
+        iyz="-8.2E-05"
+        izz="0.002373" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link6_SEA.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link6_SEA.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Joint6_SEA"
+    type="revolute">
+    <origin
+      xyz="0 0 -0.125"
+      rpy="0 0 0" />
+    <parent
+      link="Link5_SEA" />
+    <child
+      link="Link6_SEA" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Link7_SEA">
+    <inertial>
+      <origin
+        xyz="0 0 -0.042935"
+        rpy="0 0 0" />
+      <mass
+        value="0.105304" />
+      <inertia
+        ixx="0.000119"
+        ixy="0"
+        ixz="0"
+        iyy="0.000119"
+        iyz="0"
+        izz="1.7E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link7_SEA.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://0.SEA arm/meshes/Link7_SEA.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Joint7_SEA"
+    type="revolute">
+    <origin
+      xyz="0 0 -0.2007"
+      rpy="0 0 0" />
+    <parent
+      link="Link6_SEA" />
+    <child
+      link="Link7_SEA" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+</robot>
