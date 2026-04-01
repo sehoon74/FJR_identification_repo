@@ -87,17 +87,57 @@ Pose 1: $q = [0, \pi/2, -\pi/2]^T$ for joints J2, J4, J6.
 
 ### Step 1–4: Diagonal FRF Analysis (established)
 
-$$k_i = J_{\text{eff},i} \left( \sum_r \omega_{R,r}^2 - \sum_r \omega_{AR,r,i}^2 \right)$$
+**Step 1** — Motor inertia from high-frequency asymptote: $|G_{ii}(j\omega)| \to 1/(J_{m,i}\omega)$.
 
-### Step 5: Eigenvalue Constraint
+**Step 2** — Common resonance frequencies $\omega_{R,r}$ via CMIF peak detection with parabolic refinement:
 
-For 3-DOF: 8 sign combinations → 4 candidates (Klein four-group $\mathbb{Z}_2 \times \mathbb{Z}_2$).
+$$\hat{\omega}_R = \omega_k + \frac{\sigma_{k-1} - \sigma_{k+1}}{2(\sigma_{k-1} - 2\sigma_k + \sigma_{k+1})} \Delta\omega$$
 
-### Step 6: Off-Diagonal FRF Fitting (proposed)
+**Step 3** — Channel-specific anti-resonance $\omega_{AR,r,i}$ from magnitude dips of each diagonal FRF $G_{ii}$.
 
-$$\sigma^* = \arg\min_\sigma \sum_k \sum_{i \neq j} |G_{\sigma,ij}(j\omega_k) - G_{ij}^{\text{meas}}(j\omega_k)|^2$$
+**Step 4** — Vieta's formulas on the polynomial difference $\delta_i(\lambda) = P_{N_i'}(\lambda) - P_{D'}(\lambda)$:
 
-Result: correct candidate NRMSE = 0.18%, incorrect ≥ 99.4%.
+$$\boxed{k_i = J_{\text{eff},i} \left( \sum_r \omega_{R,r}^2 - \sum_r \omega_{AR,r,i}^2 \right)}$$
+
+$$W_j = \frac{A_k + A_l - A_j}{2}, \quad |\Gamma_{jk}|^2 = W_j W_k - B_i \quad (\{j,k\} \neq i)$$
+
+At this point $k_i$, $W_i$, $|\Gamma_{ij}|$, $(M_l^{-1})_{ii}$ are all determined. The remaining unknowns are the $\binom{n}{2}$ signs $\sigma_{ij} = \text{sign}(\Gamma_{ij})$.
+
+### Step 5: Eigenvalue Constraint (8 → 4 candidates)
+
+For each sign combination $\sigma = (\sigma_{12}, \sigma_{13}, \sigma_{23}) \in \{+1,-1\}^3$, construct:
+
+$$D'_\sigma = \begin{pmatrix} W_1 & \sigma_{12}|\Gamma_{12}| & \sigma_{13}|\Gamma_{13}| \\ \sigma_{12}|\Gamma_{12}| & W_2 & \sigma_{23}|\Gamma_{23}| \\ \sigma_{13}|\Gamma_{13}| & \sigma_{23}|\Gamma_{23}| & W_3 \end{pmatrix}$$
+
+Filter: keep only $\sigma$ satisfying $\text{eig}(D'_\sigma) = \{\omega_{R,r}^2\}$.
+
+**Klein four-group reduction**: The similarity transform $D' \to S D' S$ with $S = \text{diag}(s_1, s_2, s_3)$, $s_i \in \{+1,-1\}$, preserves eigenvalues but maps $\Gamma_{ij} \to s_i s_j \Gamma_{ij}$. This partitions the 8 combinations into 2 orbits of size 4; exactly 4 pass the eigenvalue test.
+
+**General $n$-DOF**: $2^{n(n-1)/2}$ total → $2^{n-1}$ candidates after filtering.
+
+### Step 6: Off-Diagonal FRF Fitting (4 → 1 unique selection)
+
+**Key insight**: All 4 surviving candidates produce identical diagonal FRFs $G_{ii}$, but yield **completely different off-diagonal FRFs** $G_{ij}$ because the cofactor $C_{ij}(s^2)$ depends on the signed off-diagonal elements of $D'$.
+
+For each surviving $\sigma$:
+
+**6a. Reconstruct** the signed inverse inertia matrix:
+
+$$(M_l^{-1})_{ii} = \frac{W_i - \omega_{m,i}^2}{k_i}, \qquad (M_l^{-1})_{ij} = \frac{\sigma_{ij}|\Gamma_{ij}|}{\sqrt{k_i k_j}}$$
+
+Then invert: $M_{l,\sigma} = [(M_l^{-1})_\sigma]^{-1}$.
+
+**6b. Compute model FRF** via the $2n \times 2n$ impedance matrix:
+
+$$Z_{CL}(s) = \begin{pmatrix} J_m s^2 + K_N & -K_N \\ -K_N & M_{l,\sigma} s^2 + K_N \end{pmatrix}, \quad G_\sigma(j\omega) = j\omega \cdot [Z_{CL}^{-1}(j\omega)]_{1:n,\,1:n}$$
+
+**6c. Evaluate NRMSE** over all off-diagonal channels:
+
+$$J_\sigma = \frac{\sqrt{\sum_k \sum_{i \neq j} |G_{\sigma,ij}(j\omega_k) - G_{ij}^{\text{meas}}(j\omega_k)|^2}}{\sqrt{\sum_k \sum_{i \neq j} |G_{ij}^{\text{meas}}(j\omega_k)|^2}} \times 100\%$$
+
+**6d. Select**: $\sigma^* = \arg\min_\sigma J_\sigma$.
+
+Result: correct candidate NRMSE = 0.18%, incorrect ≥ 99.4% (>500× separation).
 
 ## Citation
 
