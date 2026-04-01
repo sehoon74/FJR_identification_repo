@@ -4,7 +4,7 @@ Frequency-domain identification of joint stiffness $k_i$ and the **signed** inve
 
 ## Key Contribution
 
-The conventional diagonal-FRF analysis (Vieta's formulas) recovers $k_i$ and $|M_l^{-1}_{ij}|$, but cannot determine the **signs** of off-diagonal elements. We resolve this via:
+The conventional diagonal-FRF analysis (Vieta's formulas) recovers $k_i$ and $|M_l^{-1}{_{ij}}|$, but cannot determine the **signs** of off-diagonal elements. We resolve this via:
 
 1. **Eigenvalue constraint** — reduces $2^3 = 8$ sign candidates to 4 (Klein four-group symmetry)
 2. **Off-diagonal FRF fitting** — uniquely selects the correct sign by comparing model FRFs against measurement (>500× NRMSE separation)
